@@ -1,8 +1,5 @@
 import os
 import io
-import cv2 as cv
-import numpy as np
-from PIL import Image
 from torch import save
 from rembg.bg import remove
 
@@ -32,7 +29,14 @@ def translate_query(query: str) -> str:
 
 
 def generate_image(query: str, model, generate_emotions: bool, delete_background: bool):
-    query = translate_query("в полный рост "+query) + " anime"
+    if generate_emotions:
+        # это характерно для персонажа
+        query = "в полный рост "+query
+    else:
+        # это для задних фонов
+        query = "пусто без людей "+query
+
+    query = translate_query(query) + " anime"
     images = model.generate_text2img(
         query,
         num_steps=100,
@@ -45,8 +49,8 @@ def generate_image(query: str, model, generate_emotions: bool, delete_background
         prior_steps="5",
     )
     
-    
     if generate_emotions:
+        # генерация эмоций для данного персонажа
         emotions = ["happy", "sad", "angry"]
         for emotion in emotions:
             images.append(
