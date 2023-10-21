@@ -4,6 +4,7 @@ import cv2 as cv
 import numpy as np
 from PIL import Image
 from torch import save
+from rembg.bg import remove
 
 from kandinsky2 import get_kandinsky2
 from translate import Translator
@@ -30,8 +31,8 @@ def translate_query(query: str) -> str:
     return translation
 
 
-def generate_image(query: str, model, generate_emotions: bool):
-    query = translate_query(query) + " anime"
+def generate_image(query: str, model, generate_emotions: bool, delete_background: bool):
+    query = translate_query("в полный рост капибара "+query) + " anime"
     images = model.generate_text2img(
         query,
         num_steps=100,
@@ -60,13 +61,14 @@ def generate_image(query: str, model, generate_emotions: bool):
 
     imgs_byte = []
     for i in range(len(images)):
-        # перестановка цветовых каналов для отрисовки в приложении
-        arr_img = np.asarray(images[i])
-        arr_img = cv.cvtColor(arr_img, cv.COLOR_RGB2BGR)
-        images[i] = Image.fromarray(arr_img)
+        # удаление заднего фона с изображения
+        if delete_background:
+            images[i] = remove(images[i])
 
+        # конвертирование в byte data
         img_byte = io.BytesIO()
         images[i].save(img_byte, format="PNG")
         imgs_byte.append(img_byte.getvalue())
 
+    # return imgs_byte
     return images
