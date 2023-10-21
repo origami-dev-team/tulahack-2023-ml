@@ -32,7 +32,7 @@ def translate_query(query: str) -> str:
 
 
 def generate_image(query: str, model, generate_emotions: bool, delete_background: bool):
-    query = translate_query("в полный рост капибара "+query) + " anime"
+    query = translate_query("в полный рост "+query) + " anime"
     images = model.generate_text2img(
         query,
         num_steps=100,
@@ -70,5 +70,4 @@ def generate_image(query: str, model, generate_emotions: bool, delete_background
         images[i].save(img_byte, format="PNG")
         imgs_byte.append(img_byte.getvalue())
 
-    # return imgs_byte
-    return images
+    return imgs_byte
