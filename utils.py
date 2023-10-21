@@ -1,6 +1,10 @@
 import os
 import io
+import cv2 as cv
+import numpy as np
+from PIL import Image
 from torch import save
+
 from kandinsky2 import get_kandinsky2
 from translate import Translator
 from constants import *
@@ -17,15 +21,17 @@ def download_pretrained_model():
         model_version="2.1",
         use_flash_attention=False,
     )
-    save(model, 'generate_model.pth')
+    save(model, "/usr/src/pretrained_models/generating_model.pth")
+
 
 def translate_query(query: str) -> str:
-    translator= Translator(from_lang='ru', to_lang="en")
+    translator = Translator(from_lang="ru", to_lang="en")
     translation = translator.translate(query)
     return translation
 
-def generate_image(query: str, model):
-    query = translate_query(query) + ' anime'
+
+def generate_image(query: str, model, generate_emotions: bool):
+    query = translate_query(query) + " anime"
     images = model.generate_text2img(
         query,
         num_steps=100,
@@ -38,20 +44,29 @@ def generate_image(query: str, model):
         prior_steps="5",
     )
     
-    emotions = ['happy', 'sad', 'angry']
-    for emotion in emotions:
-        images.append(model.generate_img2img(
-            prompt=emotion+' '+query,
-            pil_img=images[0],
-            num_steps=100,
-            batch_size=1,
-            sampler="p_sampler"
-        )[0].resize((IMAGE_WIDTH, IMAGE_HEGHT)))
     
+    if generate_emotions:
+        emotions = ["happy", "sad", "angry"]
+        for emotion in emotions:
+            images.append(
+                model.generate_img2img(
+                    prompt=emotion + " " + query,
+                    pil_img=images[0],
+                    num_steps=100,
+                    batch_size=1,
+                    sampler="p_sampler",
+                )[0].resize((IMAGE_WIDTH, IMAGE_HEGHT))
+            )
+
     imgs_byte = []
-    for image in images:
+    for i in range(len(images)):
+        # перестановка цветовых каналов для отрисовки в приложении
+        arr_img = np.asarray(images[i])
+        arr_img = cv.cvtColor(arr_img, cv.COLOR_RGB2BGR)
+        images[i] = Image.fromarray(arr_img)
+
         img_byte = io.BytesIO()
-        image.save(img_byte, format='PNG')
+        images[i].save(img_byte, format="PNG")
         imgs_byte.append(img_byte.getvalue())
 
-    return imgs_byte
+    return images
